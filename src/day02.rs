@@ -7,15 +7,9 @@ fn two_repeated(value: &usize) -> bool {
 }
 
 fn any_repeated(value: &usize) -> bool {
-    let digits = value.to_string();
-    (1..=digits.len() / 2).any(|length| {
-        digits
-            .chars()
-            .chunks(length)
-            .into_iter()
-            .map(|c| c.collect::<Vec<_>>())
-            .all_equal()
-    })
+    let str = value.to_string();
+    let digits = str.as_bytes();
+    (1..=digits.len() / 2).any(|length| digits.chunks(length).into_iter().all_equal())
 }
 
 fn sum_invalid(input: &str, invalid_fn: fn(&usize) -> bool) -> usize {

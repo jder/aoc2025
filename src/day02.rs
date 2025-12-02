@@ -8,8 +8,7 @@ fn two_repeated(value: &usize) -> bool {
 
 fn any_repeated(value: &usize) -> bool {
     let digits = value.to_string();
-    let len = digits.len();
-    (1..=len / 2).any(|length| {
+    (1..=digits.len() / 2).any(|length| {
         digits
             .chars()
             .chunks(length)

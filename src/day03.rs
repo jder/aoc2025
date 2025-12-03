@@ -15,27 +15,29 @@ fn digit_to_val(digit: Char) -> usize {
     digit.to_char().to_digit(10).unwrap() as usize
 }
 
-fn largest_joltage(haystack: &[Char], batteries: usize) -> usize {
+fn largest_joltage(haystack: &[Char], batteries: usize, prefix: usize) -> usize {
     if batteries == 0 {
-        0
+        prefix
     } else {
         let biggest_index = largest_index(&haystack[..haystack.len() - batteries + 1]);
-        let rest = largest_joltage(&haystack[biggest_index + 1..], batteries - 1);
-
-        digit_to_val(haystack[biggest_index]) * 10usize.pow(batteries as u32 - 1) + rest
+        largest_joltage(
+            &haystack[biggest_index + 1..],
+            batteries - 1,
+            prefix * 10 + digit_to_val(haystack[biggest_index]),
+        )
     }
 }
 
 pub fn part1(input: &str, _is_sample: bool) -> usize {
     input
         .lines()
-        .map(|line| largest_joltage(line.as_ascii().unwrap(), 2))
+        .map(|line| largest_joltage(line.as_ascii().unwrap(), 2, 0))
         .sum()
 }
 
 pub fn part2(input: &str, _is_sample: bool) -> usize {
     input
         .lines()
-        .map(|line| largest_joltage(line.as_ascii().unwrap(), 12))
+        .map(|line| largest_joltage(line.as_ascii().unwrap(), 12, 0))
         .sum()
 }

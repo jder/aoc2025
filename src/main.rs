@@ -114,6 +114,7 @@ struct Args {
 mod day01;
 mod day02;
 mod day03;
+mod day04;
 
 pub fn main() {
     env_logger::init();
@@ -122,6 +123,7 @@ pub fn main() {
     runner.register_day("day01", day01::part1, day01::part2);
     runner.register_day("day02", day02::part1, day02::part2);
     runner.register_day("day03", day03::part1, day03::part2);
+    runner.register_day("day04", day04::part1, day04::part2);
 
     let args = Args::parse();
 

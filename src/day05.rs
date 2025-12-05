@@ -45,12 +45,12 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
         // The newly-added range may overlap with multiple existing ranges,
         // so we remove any which overlap and continue to expand this one to cover
         // all overlaps.
-        let accum = accum.into_iter().flat_map(|maybe_overlapping| {
+        let accum = accum.into_iter().filter(|maybe_overlapping| {
             if let Some(union) = union(&maybe_overlapping, &range) {
                 range = union;
-                None
+                false
             } else {
-                Some(maybe_overlapping)
+                true
             }
         });
 

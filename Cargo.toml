@@ -8,6 +8,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.94"
 bitvec = "1.0.1"
+chumsky = { version = "0.11.2", default-features = false, features = ["std"] }
 clap = { version = "4.5.21", features = ["derive"] }
 env_logger = "0.11.5"
 euclid = "0.22.11"

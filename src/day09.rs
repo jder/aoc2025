@@ -103,7 +103,7 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
     println!("done fill");
 
     fn rect_size((a, b): &(Point2D<isize>, Point2D<isize>)) -> isize {
-        ((a.x - b.x + 1) * (a.y - b.y + 1)).abs()
+        ((a.x - b.x).abs() + 1) * ((a.y - b.y).abs() + 1)
     }
 
     fn is_valid(a: Point2D<isize>, b: Point2D<isize>, tiles: &Grid<Tile>) -> bool {

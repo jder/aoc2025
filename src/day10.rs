@@ -1,4 +1,4 @@
-use std::iter;
+use std::{collections::HashSet, iter};
 
 use smallvec::SmallVec;
 
@@ -90,30 +90,96 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
         .map(|line| {
             println!("{line}");
             let machine = parse_line(line);
-            let start: JoltageVec = iter::repeat(0).take(machine.joltage.len()).collect();
-            min_distance_to(
-                start,
-                |v, _| v == &machine.joltage,
-                |v| {
-                    machine
-                        .buttons
-                        .iter()
-                        .map(|indexes| {
-                            let mut next = v.clone();
-                            for index in indexes {
-                                next[*index] += 1;
-                            }
-                            (next, 1)
-                        })
-                        .filter(|(next, _)| {
-                            next.iter()
-                                .zip(&machine.joltage)
-                                .all(|(next_joltage, goal_joltage)| next_joltage <= goal_joltage)
-                        })
-                        .collect()
-                },
+            let mut cache = HashSet::new();
+            let ordered_buttons = machine
+                .buttons
+                .into_iter()
+                .sorted_by_key(|button| button.len())
+                .rev()
+                .collect_vec();
+            let button_bits = ordered_buttons
+                .iter()
+                .map(|button| {
+                    let mut bits = 0;
+                    for index in button {
+                        bits |= 1 << index
+                    }
+                    bits
+                })
+                .collect_vec();
+            let mut reachable_by_index =
+                button_bits
+                    .iter()
+                    .rev()
+                    .fold(Vec::new(), |mut reachable, new_bits| {
+                        let prev_reachable = reachable.last().copied().unwrap_or_default();
+                        reachable.push(prev_reachable | *new_bits);
+                        reachable
+                    });
+            reachable_by_index.reverse();
+            // println!("{reachable_by_index:?}, {ordered_buttons:?}");
+            best(
+                0,
+                &machine.joltage,
+                &ordered_buttons,
+                &reachable_by_index,
+                &mut cache,
             )
             .unwrap()
         })
-        .sum::<u64>() as usize
+        .sum()
+}
+
+fn best(
+    index: usize,
+    needed: &JoltageVec,
+    ordered_buttons: &Vec<Vec<usize>>,
+    reachable_by_index: &Vec<usize>,
+    unreachable: &mut HashSet<(usize, JoltageVec)>,
+) -> Option<usize> {
+    let needed_bits = button_bits_needed(needed);
+    if needed.iter().all(|x| *x == 0) {
+        Some(0)
+    } else if index >= ordered_buttons.len() || !reachable_by_index[index] & needed_bits != 0 {
+        // println!("fast reject {index}, {needed:?}");
+        None
+    } else if unreachable.contains(&(index, needed.clone())) {
+        None
+    } else {
+        let button = &ordered_buttons[index];
+        for take_count in (0..=max_takeable(button, needed)).rev() {
+            let mut next = needed.clone();
+            for index in button {
+                next[*index] -= take_count
+            }
+
+            // println!("at {needed:?}: trying pushing {index} x {take_count}");
+            if let Some(result) = best(
+                index + 1,
+                &next,
+                ordered_buttons,
+                reachable_by_index,
+                unreachable,
+            ) {
+                return Some(result + take_count as usize);
+            }
+        }
+        // println!("{index}, {needed:?} unreachable");
+        unreachable.insert((index, needed.clone()));
+        None
+    }
+}
+
+fn button_bits_needed(vec: &JoltageVec) -> usize {
+    let mut bits = 0;
+    for (index, amount) in vec.iter().enumerate() {
+        if *amount > 0 {
+            bits |= 1 << index;
+        }
+    }
+    bits
+}
+
+fn max_takeable(button: &Vec<usize>, needed: &JoltageVec) -> u16 {
+    button.iter().map(|index| needed[*index]).min().unwrap()
 }

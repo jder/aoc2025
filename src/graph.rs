@@ -192,15 +192,16 @@ where
     V: Eq + Ord + Hash + Clone,
 {
     let first_edges = edges(&start);
-    let mut path_and_local_queues = vec![(start, first_edges)];
+    let mut path_and_local_queues = vec![(start, first_edges, false)];
     return iter::from_fn(move || {
-        while let Some((node, alternatives)) = path_and_local_queues.last_mut() {
-            if *node == end {
+        while let Some((node, alternatives, seen)) = path_and_local_queues.last_mut() {
+            if *node == end && !*seen {
+                *seen = true;
                 let node = node.clone();
                 return Some(
                     path_and_local_queues
                         .iter()
-                        .map(|(n, _)| n.clone())
+                        .map(|(n, _, _)| n.clone())
                         .chain(iter::once(node))
                         .collect_vec(),
                 );
@@ -208,7 +209,7 @@ where
 
             if let Some(next_node) = alternatives.pop() {
                 let next_edges = edges(&next_node);
-                path_and_local_queues.push((next_node, next_edges));
+                path_and_local_queues.push((next_node, next_edges, false));
             } else {
                 path_and_local_queues.pop();
             }

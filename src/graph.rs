@@ -1,6 +1,7 @@
 use std::{
     cmp::Reverse,
     collections::{BinaryHeap, HashMap, HashSet},
+    fmt::Debug,
     hash::Hash,
     iter,
 };
@@ -189,7 +190,7 @@ where
 
 pub fn all_paths<V>(start: V, end: V, edges: impl Fn(&V) -> Vec<V>) -> impl Iterator<Item = Vec<V>>
 where
-    V: Eq + Ord + Hash + Clone,
+    V: Eq + Ord + Hash + Clone + Debug,
 {
     let first_edges = edges(&start);
     let mut path_and_local_queues = vec![(start, first_edges, false)];
@@ -197,12 +198,10 @@ where
         while let Some((node, alternatives, seen)) = path_and_local_queues.last_mut() {
             if *node == end && !*seen {
                 *seen = true;
-                let node = node.clone();
                 return Some(
                     path_and_local_queues
                         .iter()
                         .map(|(n, _, _)| n.clone())
-                        .chain(iter::once(node))
                         .collect_vec(),
                 );
             }
@@ -217,6 +216,33 @@ where
 
         None
     });
+}
+
+pub fn count_paths<V>(start: V, end: V, edges: impl Fn(&V) -> Vec<V>) -> usize
+where
+    V: Eq + Ord + Hash + Debug,
+{
+    let mut cache = HashMap::new();
+    cache.insert(end, 1);
+
+    fn visit<V: Eq + Ord + Hash + Debug>(
+        start: V,
+        cache: &mut HashMap<V, usize>,
+        edges: &impl Fn(&V) -> Vec<V>,
+    ) -> usize {
+        if let Some(cached) = cache.get(&start) {
+            *cached
+        } else {
+            let result = edges(&start)
+                .into_iter()
+                .map(|edge| visit(edge, cache, edges))
+                .sum();
+            cache.insert(start, result);
+            result
+        }
+    }
+
+    visit(start, &mut cache, &edges)
 }
 
 pub fn flood_fill_from<V, EI>(

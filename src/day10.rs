@@ -119,18 +119,33 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
             let reachable_lsb_by_index = (0..button_bits.len())
                 .map(|index| reachable_lsb(&button_bits[index..], &ordered_buttons[index..]))
                 .collect_vec();
-            let mut cache = (0..ordered_buttons.len()).map(|_| HashSet::new()).collect();
 
             // println!("{reachable_by_index:?}, {ordered_buttons:?}");
-            best(
+            let (amount, rev_buttons) = best(
                 0,
                 &machine.joltage,
                 &ordered_buttons,
                 &reachable_by_index,
                 &reachable_lsb_by_index,
-                &mut cache,
             )
-            .unwrap()
+            .unwrap();
+
+            assert!(rev_buttons.iter().sum::<usize>() == amount);
+            assert!(
+                rev_buttons
+                    .iter()
+                    .rev()
+                    .zip(ordered_buttons.iter())
+                    .fold(machine.joltage, |mut before, (count, button)| {
+                        for but in button {
+                            before[*but] -= *count as u16;
+                        }
+                        before
+                    })
+                    .iter()
+                    .all(|x| *x == 0)
+            );
+            amount
         })
         .sum()
 }
@@ -171,43 +186,70 @@ fn best(
     ordered_buttons: &Vec<Vec<usize>>,
     reachable_by_index: &Vec<usize>,
     reachable_lsb_by_index: &Vec<HashSet<u16>>,
-    unreachable: &mut Vec<HashSet<JoltageVec>>,
-) -> Option<usize> {
+) -> Option<(usize, Vec<usize>)> {
     if index == 1 {
         println!("trying {needed:?}");
     }
     let needed_bits = button_bits_needed(needed);
     if needed.iter().all(|x| *x == 0) {
-        Some(0)
+        Some((0, vec![]))
     } else if index >= ordered_buttons.len() || !reachable_by_index[index] & needed_bits != 0 {
         // println!("fast reject {index}, {needed:?}");
-        None
-    } else if unreachable[index].contains(needed) {
         None
     } else if !reachable_lsb_by_index[index].contains(&lsb(needed)) {
         None
     } else {
         let button = &ordered_buttons[index];
-        for take_count in (0..=max_takeable(button, needed)).rev() {
+        let max = max_takeable(button, needed);
+        let range = if let Some(must) = must_takeable(
+            button,
+            needed,
+            reachable_by_index[index],
+            *reachable_by_index.get(index + 1).unwrap_or(&0),
+        ) {
+            if must > max {
+                return None;
+            }
+            must..=must
+        } else {
+            0..=max
+        };
+        for take_count in range.rev() {
             let mut next = needed.clone();
             for index in button {
                 next[*index] -= take_count
             }
 
             // println!("at {needed:?}: trying pushing {index} x {take_count}");
-            if let Some(result) = best(
+            if let Some((result, mut pressed)) = best(
                 index + 1,
                 &next,
                 ordered_buttons,
                 reachable_by_index,
                 reachable_lsb_by_index,
-                unreachable,
             ) {
-                return Some(result + take_count as usize);
+                pressed.push(take_count as usize);
+                return Some((result + take_count as usize, pressed));
             }
         }
         // println!("{index}, {needed:?} unreachable");
-        unreachable[index].insert(needed.clone());
+        // unreachable[index].insert(needed.clone());
+        None
+    }
+}
+
+fn must_takeable(
+    button: &[usize],
+    needed: &SmallVec<[u16; 10]>,
+    reachable: usize,
+    next_reachable: usize,
+) -> Option<u16> {
+    let now_only = reachable & !next_reachable;
+    if now_only != 0 {
+        let first_index = now_only.trailing_zeros();
+        debug_assert!(button.contains(&(first_index as usize)));
+        Some(needed[first_index as usize])
+    } else {
         None
     }
 }

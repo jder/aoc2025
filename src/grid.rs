@@ -33,7 +33,7 @@ impl<T> Grid<T> {
     }
 
     /// Returns a cell for this location, or None if the location is out of bounds.
-    pub fn cell(&self, location: Location) -> Option<Cell<T>> {
+    pub fn cell(&self, location: Location) -> Option<Cell<'_, T>> {
         if location.x < 0
             || location.y < 0
             || location.x >= self.width as Index
@@ -61,7 +61,7 @@ impl<T> Grid<T> {
         self.height
     }
 
-    pub fn cells(&self) -> impl Iterator<Item = Cell<T>> + Clone {
+    pub fn cells(&self) -> impl Iterator<Item = Cell<'_, T>> + Clone {
         let width = self.width as Index;
         let height = self.height as Index;
         (0..height)

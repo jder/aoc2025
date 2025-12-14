@@ -1,5 +1,4 @@
 #![feature(hash_set_entry)]
-#![feature(let_chains)]
 #![feature(ascii_char)]
 use std::{fmt::Display, path::Path};
 

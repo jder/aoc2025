@@ -1,4 +1,4 @@
-use std::{collections::HashSet, iter};
+use std::iter;
 
 use smallvec::SmallVec;
 

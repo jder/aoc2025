@@ -52,6 +52,7 @@ pub fn part1(input: &str, _is_sample: bool) -> usize {
         .sum()
 }
 
-pub fn part2(input: &str, _is_sample: bool) -> usize {
-    todo!()
+pub fn part2(_input: &str, _is_sample: bool) -> usize {
+    println!("merry christmas");
+    0
 }

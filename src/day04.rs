@@ -5,7 +5,7 @@ fn is_roll(cell: &Cell<char>) -> bool {
     *cell.contents() == '@'
 }
 
-fn accessible(grid: &Grid<char>) -> impl Iterator<Item = Cell<char>> {
+fn accessible(grid: &Grid<char>) -> impl Iterator<Item = Cell<'_, char>> {
     grid.cells()
         .filter(|cell| is_roll(cell) && cell.neighbors().filter(is_roll).count() < 4)
 }

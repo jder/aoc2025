@@ -91,11 +91,7 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
 
             let solver = z3::Optimize::new();
 
-            let mut joltage_sums = machine
-                .joltage
-                .iter()
-                .map(|_| z3::ast::Int::from_i64(0))
-                .collect_vec();
+            let mut joltage_sums = vec![z3::ast::Int::from_i64(0); machine.joltage.len()];
 
             let button_counts = machine
                 .buttons

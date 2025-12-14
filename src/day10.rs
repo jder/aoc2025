@@ -90,7 +90,6 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
         .map(|line| {
             println!("{line}");
             let machine = parse_line(line);
-            let mut cache = HashSet::new();
             let ordered_buttons = machine
                 .buttons
                 .into_iter()
@@ -117,12 +116,18 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
                         reachable
                     });
             reachable_by_index.reverse();
+            let reachable_lsb_by_index = (0..button_bits.len())
+                .map(|index| reachable_lsb(&button_bits[index..], &ordered_buttons[index..]))
+                .collect_vec();
+            let mut cache = (0..ordered_buttons.len()).map(|_| HashSet::new()).collect();
+
             // println!("{reachable_by_index:?}, {ordered_buttons:?}");
             best(
                 0,
                 &machine.joltage,
                 &ordered_buttons,
                 &reachable_by_index,
+                &reachable_lsb_by_index,
                 &mut cache,
             )
             .unwrap()
@@ -130,20 +135,56 @@ pub fn part2(input: &str, _is_sample: bool) -> usize {
         .sum()
 }
 
+fn reachable_lsb(button_bits: &[usize], buttons: &[Vec<usize>]) -> HashSet<u16> {
+    let mut seen = HashSet::new();
+    let mut queue = vec![0];
+    while let Some(next) = queue.pop() {
+        for bits in button_bits {
+            let possible = next ^ bits;
+            if seen.insert(possible as u16) {
+                queue.push(possible);
+            }
+        }
+    }
+    println!(
+        "{} are reachable from {} aka {:?}",
+        seen.len(),
+        button_bits.iter().map(|b| format!("{b:#b}")).join(", "),
+        buttons
+    );
+    seen
+}
+
+fn lsb(needed: &JoltageVec) -> u16 {
+    let mut result = 0;
+    for (index, one_needed) in needed.iter().enumerate() {
+        if one_needed & 0x1 == 1 {
+            result |= 0x1 << index;
+        }
+    }
+    result
+}
+
 fn best(
     index: usize,
     needed: &JoltageVec,
     ordered_buttons: &Vec<Vec<usize>>,
     reachable_by_index: &Vec<usize>,
-    unreachable: &mut HashSet<(usize, JoltageVec)>,
+    reachable_lsb_by_index: &Vec<HashSet<u16>>,
+    unreachable: &mut Vec<HashSet<JoltageVec>>,
 ) -> Option<usize> {
+    if index == 1 {
+        println!("trying {needed:?}");
+    }
     let needed_bits = button_bits_needed(needed);
     if needed.iter().all(|x| *x == 0) {
         Some(0)
     } else if index >= ordered_buttons.len() || !reachable_by_index[index] & needed_bits != 0 {
         // println!("fast reject {index}, {needed:?}");
         None
-    } else if unreachable.contains(&(index, needed.clone())) {
+    } else if unreachable[index].contains(needed) {
+        None
+    } else if !reachable_lsb_by_index[index].contains(&lsb(needed)) {
         None
     } else {
         let button = &ordered_buttons[index];
@@ -159,13 +200,14 @@ fn best(
                 &next,
                 ordered_buttons,
                 reachable_by_index,
+                reachable_lsb_by_index,
                 unreachable,
             ) {
                 return Some(result + take_count as usize);
             }
         }
         // println!("{index}, {needed:?} unreachable");
-        unreachable.insert((index, needed.clone()));
+        unreachable[index].insert(needed.clone());
         None
     }
 }
